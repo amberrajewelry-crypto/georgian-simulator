@@ -1,0 +1,663 @@
+<!DOCTYPE html>
+<html lang="ka">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>სიმულატორი - 200 კითხვა</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.3);
+            overflow: hidden;
+        }
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+            position: relative;
+        }
+        .header h1 { font-size: 28px; margin-bottom: 10px; }
+        .header p { opacity: 0.9; }
+        .timer {
+            position: absolute;
+            top: 30px;
+            right: 30px;
+            font-size: 18px;
+            font-weight: 700;
+            background: rgba(255,255,255,0.2);
+            padding: 8px 16px;
+            border-radius: 6px;
+        }
+        .timer.warning { background: #ff9800; }
+        .timer.danger { background: #f44336; }
+        .progress-bar {
+            height: 6px;
+            background: rgba(255,255,255,0.3);
+            width: 100%;
+            margin-top: 15px;
+        }
+        .progress-fill {
+            height: 100%;
+            background: #4CAF50;
+            transition: width 0.3s;
+        }
+        .content {
+            padding: 40px;
+            min-height: 600px;
+            display: flex;
+            flex-direction: column;
+        }
+        .question-block { flex: 1; }
+        .question-num {
+            color: #667eea;
+            font-size: 14px;
+            font-weight: 600;
+            margin-bottom: 5px;
+        }
+        .question-text {
+            font-size: 20px;
+            font-weight: 600;
+            margin-bottom: 15px;
+            color: #333;
+        }
+        .question-ctx {
+            background: #f5f5f5;
+            padding: 15px;
+            border-left: 4px solid #667eea;
+            margin-bottom: 20px;
+            font-size: 16px;
+            line-height: 1.6;
+        }
+        .options {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 12px;
+            margin-bottom: 25px;
+        }
+        .option {
+            padding: 16px 18px;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s;
+            background: white;
+            font-size: 16px;
+            font-weight: 500;
+        }
+        .option:hover:not(.disabled) {
+            border-color: #667eea;
+            background: #f0f4ff;
+        }
+        .option.disabled { cursor: default; }
+        .option.correct {
+            background: #e8f5e9;
+            border-color: #4CAF50;
+            color: #1b5e20;
+        }
+        .option.incorrect {
+            background: #ffebee;
+            border-color: #f44336;
+            color: #c62828;
+        }
+        .explanation {
+            background: #fffbea;
+            border-left: 4px solid #ffc107;
+            padding: 15px;
+            margin: 20px 0;
+            border-radius: 4px;
+            display: none;
+            font-size: 15px;
+            line-height: 1.6;
+        }
+        .explanation.show { display: block; }
+        .explanation strong { color: #f57c00; }
+        .stats {
+            display: flex;
+            gap: 30px;
+            margin-top: 25px;
+            padding: 20px;
+            background: #f9f9f9;
+            border-radius: 8px;
+            font-size: 15px;
+        }
+        .stat {
+            flex: 1;
+            text-align: center;
+        }
+        .stat-value {
+            font-size: 24px;
+            font-weight: 700;
+            color: #667eea;
+        }
+        .stat-label {
+            color: #666;
+            margin-top: 5px;
+        }
+        .button {
+            padding: 12px 30px;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        .button-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+        .button-primary:hover { transform: translateY(-2px); box-shadow: 0 5px 20px rgba(102,126,234,0.4); }
+        .button-primary:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+        }
+        .button.secondary {
+            background: #f5f5f5;
+            color: #333;
+            border: 2px solid #ddd;
+        }
+        .button.secondary.active {
+            background: #667eea;
+            color: white;
+            border-color: #667eea;
+        }
+        .button-group {
+            display: flex;
+            gap: 15px;
+            margin-top: 25px;
+            justify-content: space-between;
+            flex-wrap: wrap;
+        }
+        .button-group .button {
+            flex: 1;
+            min-width: 120px;
+        }
+        .final-screen {
+            text-align: center;
+            display: none;
+        }
+        .final-screen.show {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+        .final-score {
+            font-size: 60px;
+            font-weight: 700;
+            color: #667eea;
+            margin: 20px 0;
+        }
+        .final-message {
+            font-size: 24px;
+            color: #333;
+            margin-bottom: 10px;
+        }
+        .final-percent {
+            font-size: 18px;
+            color: #666;
+            margin-bottom: 30px;
+        }
+        .section-breakdown {
+            background: #f9f9f9;
+            padding: 20px;
+            border-radius: 8px;
+            margin: 20px 0;
+            text-align: left;
+        }
+        .section-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 10px 0;
+            border-bottom: 1px solid #eee;
+        }
+        .section-item:last-child { border-bottom: none; }
+        .section-name { font-weight: 600; }
+        .section-score { color: #667eea; font-weight: 700; }
+        .filter-section {
+            background: #f9f9f9;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            display: none;
+        }
+        .filter-section.show { display: block; }
+        .filter-label {
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 10px;
+        }
+        .section-filter {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
+            gap: 8px;
+        }
+        .filter-btn {
+            padding: 8px 12px;
+            border: 2px solid #ddd;
+            border-radius: 6px;
+            background: white;
+            cursor: pointer;
+            font-size: 13px;
+            font-weight: 500;
+            transition: all 0.2s;
+        }
+        .filter-btn.active {
+            background: #667eea;
+            border-color: #667eea;
+            color: white;
+        }
+        .filter-btn.error-mode {
+            background: #f44336;
+            border-color: #f44336;
+            color: white;
+        }
+        .loading { text-align: center; padding: 40px; color: #999; }
+        .keyboard-hint {
+            font-size: 12px;
+            color: #999;
+            margin-top: 10px;
+            padding-top: 10px;
+            border-top: 1px solid #eee;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div class="timer" id="timer">⏱ 2:00:00</div>
+            <div class="progress-bar">
+                <div class="progress-fill" id="progressFill"></div>
+            </div>
+            <h1>📝 სიმულატორი - ქართული ენა</h1>
+            <p>200 კითხვა / გამოცდის მოთავსება</p>
+        </div>
+
+        <div class="content">
+            <div class="filter-section" id="filterSection">
+                <div class="filter-label">🔍 ფილტრი:</div>
+                <div class="section-filter" id="sectionFilter"></div>
+            </div>
+
+            <div class="question-block" id="questionBlock">
+                <div class="loading">იტვირთება...</div>
+            </div>
+
+            <div class="final-screen" id="finalScreen">
+                <div class="final-message" id="finalMessage"></div>
+                <div class="final-score" id="finalScore"></div>
+                <div class="final-percent" id="finalPercent"></div>
+                <div class="section-breakdown" id="sectionBreakdown"></div>
+                <button class="button button-primary" onclick="location.reload()">თავიდან დაწყება</button>
+            </div>
+
+            <div class="stats" id="stats" style="display: none;">
+                <div class="stat">
+                    <div class="stat-value" id="correctCount">0</div>
+                    <div class="stat-label">სწორი</div>
+                </div>
+                <div class="stat">
+                    <div class="stat-value" id="totalCount">0</div>
+                    <div class="stat-label">სულ</div>
+                </div>
+                <div class="stat">
+                    <div class="stat-value" id="percentCount">0%</div>
+                    <div class="stat-label">პროცენტი</div>
+                </div>
+            </div>
+
+            <div class="button-group" id="buttonGroup" style="display: none;">
+                <button class="button button-primary" id="prevBtn" onclick="prevQuestion()" disabled>← უკან</button>
+                <button class="button button-primary" id="nextBtn" onclick="nextQuestion()" disabled>შემდეგი →</button>
+            </div>
+            <div class="keyboard-hint">💡 Enter = ჩააბეჭდე პასუხი | ← → = დამიწერე</div>
+        </div>
+    </div>
+
+    <script>
+        let questions = [];
+        let currentIndex = 0;
+        let answered = new Set();
+        let correct = new Set();
+        let selectedSection = null;
+        let selectedMode = 'all'; // 'all', 'errors'
+        let filteredQuestions = [];
+        let timerInterval = null;
+        let timeRemaining = 120 * 60; // 120 minutes in seconds
+        const STORAGE_KEY = 'sim-answers-v2';
+
+        // Timer
+        function startTimer() {
+            timerInterval = setInterval(() => {
+                timeRemaining--;
+                updateTimerDisplay();
+                if (timeRemaining <= 0) {
+                    clearInterval(timerInterval);
+                    alert('დრო ამოიწურა!');
+                    showFinalScreen();
+                }
+            }, 1000);
+        }
+
+        function updateTimerDisplay() {
+            const hours = Math.floor(timeRemaining / 3600);
+            const minutes = Math.floor((timeRemaining % 3600) / 60);
+            const seconds = timeRemaining % 60;
+            const formatted = `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+            const timerEl = document.getElementById('timer');
+            timerEl.textContent = `⏱ ${formatted}`;
+
+            if (timeRemaining < 5 * 60) timerEl.classList.add('danger');
+            else if (timeRemaining < 15 * 60) timerEl.classList.add('warning');
+        }
+
+        // LocalStorage
+        function saveState() {
+            const state = {
+                answered: Array.from(answered),
+                correct: Array.from(correct),
+                userAnswers: filteredQuestions.map((q, i) => ({id: q.id, ans: q._userAnswer}))
+            };
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+        }
+
+        function loadState() {
+            const stored = localStorage.getItem(STORAGE_KEY);
+            if (stored) {
+                const state = JSON.parse(stored);
+                answered = new Set(state.answered);
+                correct = new Set(state.correct);
+                // Restore user answers
+                const answers = {};
+                state.userAnswers.forEach(ua => answers[ua.id] = ua.ans);
+                questions.forEach(q => {
+                    if (answers[q.id] !== undefined) q._userAnswer = answers[q.id];
+                });
+            }
+        }
+
+        // Load JSON data
+        async function loadData() {
+            try {
+                const response = await fetch('bank.json');
+                questions = await response.json();
+                loadState();
+                filteredQuestions = [...questions];
+                initializeSectionFilter();
+                showQuestion(0);
+                startTimer();
+            } catch (e) {
+                document.getElementById('questionBlock').innerHTML =
+                    '<div class="loading" style="color: #f44336;">❌ ბანკი არ იტვირთება. გამოყენება: ფაილი უნდა იყოს იმავე დირექტორიაში.</div>';
+            }
+        }
+
+        function initializeSectionFilter() {
+            const sections = [...new Set(questions.map(q => q.sec))];
+            let filterHtml = sections.map(sec =>
+                `<button class="filter-btn" onclick="filterBySection('${sec}')">${sec}</button>`
+            ).join('');
+            filterHtml += `<button class="filter-btn" onclick="filterBySection(null)">ყველა</button>`;
+            filterHtml += `<button class="filter-btn" id="errorsBtn" onclick="filterErrors()" style="margin-left: auto;">🔴 მხოლოდ შეცდომები</button>`;
+
+            document.getElementById('sectionFilter').innerHTML = filterHtml;
+            document.getElementById('filterSection').classList.add('show');
+
+            // Activate "all" by default
+            document.querySelectorAll('.filter-btn')[sections.length].classList.add('active');
+        }
+
+        function filterBySection(section) {
+            selectedMode = 'all';
+            selectedSection = section;
+            currentIndex = 0;
+
+            if (section) {
+                filteredQuestions = questions.filter(q => q.sec === section);
+            } else {
+                filteredQuestions = [...questions];
+            }
+
+            // Update filter buttons
+            document.querySelectorAll('.filter-btn').forEach(btn => {
+                btn.classList.remove('active', 'error-mode');
+                const text = btn.textContent.trim();
+                if ((section && text === section) || (!section && text === 'ყველა')) {
+                    btn.classList.add('active');
+                }
+            });
+
+            updateStats();
+            showQuestion(0);
+        }
+
+        function filterErrors() {
+            selectedMode = 'errors';
+            selectedSection = null;
+            currentIndex = 0;
+
+            // Find questions answered wrong
+            const errorIds = new Set();
+            filteredQuestions.forEach((q, i) => {
+                if (answered.has(i) && !correct.has(i)) errorIds.add(q.id);
+            });
+
+            filteredQuestions = questions.filter(q => errorIds.has(q.id));
+
+            if (filteredQuestions.length === 0) {
+                alert('👏 თქვენ ყველა კითხვას სწორად უპასუხეთ!');
+                filterBySection(null);
+                return;
+            }
+
+            // Reset answered/correct for errors only
+            const originalAnswered = answered;
+            const originalCorrect = correct;
+            answered = new Set();
+            correct = new Set();
+
+            // Re-apply answers for errors
+            filteredQuestions.forEach((q, newIdx) => {
+                const origIdx = questions.findIndex(orig => orig.id === q.id);
+                if (originalAnswered.has(origIdx)) {
+                    answered.add(newIdx);
+                    if (originalCorrect.has(origIdx)) correct.add(newIdx);
+                }
+            });
+
+            // Update filter buttons
+            document.querySelectorAll('.filter-btn').forEach(btn => {
+                btn.classList.remove('active', 'error-mode');
+            });
+            document.getElementById('errorsBtn').classList.add('error-mode');
+
+            updateStats();
+            showQuestion(0);
+        }
+
+        function showQuestion(idx) {
+            if (idx >= filteredQuestions.length) {
+                showFinalScreen();
+                return;
+            }
+
+            currentIndex = idx;
+            const q = filteredQuestions[idx];
+
+            let html = `
+                <div class="question-num">კითხვა ${idx + 1}/${filteredQuestions.length} (${q.sec})</div>
+                <div class="question-text">🇬🇪 ${q.q}</div>
+                <div class="question-ctx">${q.ctx}</div>
+            `;
+
+            html += '<div class="options">';
+            q.opts.forEach((opt, i) => {
+                const isAnswered = answered.has(idx);
+                const isCorrectAnswer = i === q.a;
+                const isUserCorrect = correct.has(idx);
+
+                let classList = 'option';
+                if (isAnswered) classList += ' disabled';
+                if (isAnswered && isCorrectAnswer) classList += ' correct';
+                if (isAnswered && !isUserCorrect && q._userAnswer === i) classList += ' incorrect';
+
+                html += `<div class="${classList}" onclick="selectAnswer(${idx}, ${i}, ${q.a})">${opt}</div>`;
+            });
+            html += '</div>';
+
+            if (answered.has(idx)) {
+                html += `<div class="explanation show">
+                    <strong>📌 ახსნა:</strong> ${q.why}
+                </div>`;
+            }
+
+            document.getElementById('questionBlock').innerHTML = html;
+
+            updateProgressBar();
+            updateStats();
+
+            document.getElementById('stats').style.display = 'flex';
+            document.getElementById('buttonGroup').style.display = 'flex';
+            document.getElementById('prevBtn').disabled = idx === 0;
+            document.getElementById('nextBtn').disabled = !answered.has(idx);
+        }
+
+        function selectAnswer(qIdx, optIdx, correctIdx) {
+            if (answered.has(qIdx)) return;
+
+            answered.add(qIdx);
+            const isCorrect = optIdx === correctIdx;
+            if (isCorrect) correct.add(qIdx);
+
+            filteredQuestions[qIdx]._userAnswer = optIdx;
+            saveState();
+
+            document.querySelectorAll('.option').forEach((el, i) => {
+                if (i === correctIdx) {
+                    el.classList.add('correct');
+                    el.classList.add('disabled');
+                } else if (i === optIdx && !isCorrect) {
+                    el.classList.add('incorrect');
+                    el.classList.add('disabled');
+                } else if (i !== correctIdx) {
+                    el.classList.add('disabled');
+                }
+            });
+
+            document.querySelector('.explanation').classList.add('show');
+            document.getElementById('nextBtn').disabled = false;
+
+            updateStats();
+        }
+
+        function nextQuestion() {
+            if (currentIndex + 1 < filteredQuestions.length) {
+                showQuestion(currentIndex + 1);
+            }
+        }
+
+        function prevQuestion() {
+            if (currentIndex > 0) {
+                showQuestion(currentIndex - 1);
+            }
+        }
+
+        function updateProgressBar() {
+            const percent = (answered.size / filteredQuestions.length) * 100;
+            document.getElementById('progressFill').style.width = percent + '%';
+        }
+
+        function updateStats() {
+            const total = filteredQuestions.length;
+            const correctCount = correct.size;
+            const percent = total > 0 ? Math.round((correctCount / total) * 100) : 0;
+
+            document.getElementById('correctCount').textContent = correctCount;
+            document.getElementById('totalCount').textContent = answered.size;
+            document.getElementById('percentCount').textContent = percent + '%';
+        }
+
+        function showFinalScreen() {
+            clearInterval(timerInterval);
+
+            // Recount all questions by section
+            const sections = [...new Set(questions.map(q => q.sec))];
+            const sectionStats = {};
+
+            sections.forEach(sec => {
+                const secQuestions = questions.filter(q => q.sec === sec);
+                let secCorrect = 0;
+                secQuestions.forEach((q, idx) => {
+                    const qIdx = questions.indexOf(q);
+                    if (correct.has(qIdx)) secCorrect++;
+                });
+                sectionStats[sec] = {
+                    correct: secCorrect,
+                    total: secQuestions.length
+                };
+            });
+
+            const total = questions.length;
+            const correctCount = correct.size;
+            const percent = Math.round((correctCount / total) * 100);
+
+            let message = '✅ სთქვა!';
+            if (percent < 70) message = '⚠️ ცდება. გაიმეორე.';
+            if (percent < 50) message = '❌ ბევრი შეცდომა.';
+            if (percent >= 90) message = '🏆 შესანიშნავი!';
+
+            document.getElementById('finalMessage').textContent = message;
+            document.getElementById('finalScore').textContent = `${correctCount}/${total}`;
+            document.getElementById('finalPercent').textContent = `${percent}%`;
+
+            let breakdownHtml = '<div class="section-breakdown"><strong>რაოდენობა სექციების მიხედვით:</strong>';
+            Object.entries(sectionStats).forEach(([sec, stats]) => {
+                const secPercent = Math.round((stats.correct / stats.total) * 100);
+                breakdownHtml += `
+                    <div class="section-item">
+                        <span class="section-name">${sec}</span>
+                        <span class="section-score">${stats.correct}/${stats.total} (${secPercent}%)</span>
+                    </div>
+                `;
+            });
+            breakdownHtml += '</div>';
+            document.getElementById('sectionBreakdown').innerHTML = breakdownHtml;
+
+            document.getElementById('questionBlock').style.display = 'none';
+            document.getElementById('stats').style.display = 'none';
+            document.getElementById('buttonGroup').style.display = 'none';
+            document.getElementById('filterSection').style.display = 'none';
+            document.getElementById('finalScreen').classList.add('show');
+        }
+
+        // Keyboard shortcuts
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') {
+                const options = document.querySelectorAll('.option:not(.disabled)');
+                if (options.length > 0) {
+                    // Focus first selectable option
+                    options[0].click();
+                }
+            } else if (e.key === 'ArrowRight') {
+                if (!document.getElementById('nextBtn').disabled) nextQuestion();
+            } else if (e.key === 'ArrowLeft') {
+                if (!document.getElementById('prevBtn').disabled) prevQuestion();
+            }
+        });
+
+        // Start
+        loadData();
+    </script>
+</body>
+</html>
