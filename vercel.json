@@ -1,6 +1,5 @@
 {
   "version": 2,
   "buildCommand": "echo 'Static HTML'",
-  "public": true,
   "outputDirectory": "."
 }
